@@ -6,22 +6,25 @@ def josa_last_translation(translator: Translator, stroke: Stroke, args: str) -> 
     if not translations:
         return
 
-    # 마지막 단어 가져오기
-    last_text = translations[-1].english
-    # 한글만 추출 (받침 판별용)
+    # 1. 마지막 번역 결과 가져오기 (None 방지 처리)
+    last_translation = translations[-1]
+    last_text = last_translation.english if last_translation.english is not None else ""
+
+    # 2. 한글만 추출 (받침 판별용)
     clean_text = re.sub(r'[^가-힣]', '', last_text)
     
-    # 명령어 뒤에 붙은 글자(args)가 있으면 앞에 공백을 포함해 tail로 만듦
+    # 3. 추가 텍스트(args) 처리
     tail = f" {args}" if args else ""
 
+    # 4. 받침 판별 로직 (텍스트가 비어있으면 기본값 '를')
     if not clean_text:
         suffix = "를" + tail
     else:
         last_char = clean_text[-1]
-        # 받침 판별 공식
+        # 한글 유니코드 판별 공식
         suffix = ("을" if (ord(last_char) - 0xAC00) % 28 > 0 else "를") + tail
 
-    # 앞 단어와 공백 없이 결합 ({^})
+    # 5. 최종 출력
     new_translation = Translation([stroke], "{^" + suffix + "}")
     translator.translate_translation(new_translation)
 
