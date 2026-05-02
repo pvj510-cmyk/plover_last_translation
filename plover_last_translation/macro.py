@@ -10,33 +10,23 @@ from plover.formatting import RetroFormatter
 DELIM_ARGS = ','
 
 def josa_last_translation(translator: Translator, stroke: Stroke, args: str) -> None:
-    '''
-    Macro to attach Korean Josa (을/를) based on the last translation.
-    '''
-    # 1. 현재 번역 상태 가져오기
     translations = translator.get_state().translations
     if not translations:
         return
 
-    # 2. 마지막으로 입력된 텍스트 가져오기
-    last_translation = translations[-1]
-    last_text = last_translation.english
-
-    # 3. 한글 받침 판별 로직
-    # 한글만 추출 (특수문자 및 명령어 제거)
+    last_text = translations[-1].english
     clean_text = re.sub(r'[^가-힣]', '', last_text)
     
+    # args가 있으면 그 글자를 쓰고, 없으면 기본값 '를' 사용
+    # 예: =josa_ㄹ(통해서) 라고 쓰면 tail은 " 통해서"가 됨
+    tail = f" {args}" if args else ""
+
     if not clean_text:
-        suffix = "를"  # 한글이 없으면 기본값으로 '를' 설정
+        suffix = "를" + tail
     else:
         last_char = clean_text[-1]
-        # 한글 유니코드 계산법: (한글코드 - 0xAC00) % 28 > 0 이면 받침 있음
-        if (ord(last_char) - 0xAC00) % 28 > 0:
-            suffix = "을"
-        else:
-            suffix = "를"
+        suffix = ("을" if (ord(last_char) - 0xAC00) % 28 > 0 else "를") + tail
 
-    # 4. 결과 출력 ({^}를 사용하여 앞 단어에 바로 붙임)
     new_translation = Translation([stroke], "{^" + suffix + "}")
     translator.translate_translation(new_translation)
 
